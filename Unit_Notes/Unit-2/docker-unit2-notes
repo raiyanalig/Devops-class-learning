@@ -1,0 +1,405 @@
+# 🐳 Docker Unit 2 – Exam Ready Notes (My Preparation Notes)
+
+---
+
+## 🔹 1. Dockerfile Core Concepts
+
+### ✅ Image Layering
+
+* Docker images are built in **layers**.
+* Each instruction in a Dockerfile creates a new layer.
+* Layers are **cached** → speeds up rebuilds.
+* If one layer changes, only that layer and below are rebuilt.
+
+👉 Example:
+
+```dockerfile
+FROM ubuntu
+RUN apt update
+RUN apt install -y nginx
+```
+
+Each `RUN` creates a separate layer.
+
+---
+
+### ✅ Build Context & `.dockerignore`
+
+* **Build context** = folder sent to Docker daemon during `docker build`.
+
+* Includes all files unless excluded.
+
+* `.dockerignore` works like `.gitignore`
+  👉 Used to exclude:
+
+```
+node_modules
+.git
+*.log
+```
+
+👉 Why important:
+
+* Reduces build size
+* Faster builds
+* Avoids leaking sensitive data
+
+---
+
+## 🔹 2. Dockerfile Instructions (Important)
+
+### 🔸 FROM
+
+* Base image
+
+```dockerfile
+FROM node:18
+```
+
+---
+
+### 🔸 RUN
+
+* Executes commands during build
+
+```dockerfile
+RUN apt-get update && apt-get install -y curl
+```
+
+---
+
+### 🔸 COPY
+
+* Copies files from local → container
+
+```dockerfile
+COPY . /app
+```
+
+---
+
+### 🔸 ADD
+
+* Similar to COPY but can:
+
+  * Extract tar files
+  * Download URLs
+
+```dockerfile
+ADD file.tar.gz /app
+```
+
+---
+
+### 🔸 CMD
+
+* Default command (can be overridden)
+
+```dockerfile
+CMD ["node", "app.js"]
+```
+
+---
+
+### 🔸 ENTRYPOINT
+
+* Fixed command (not easily overridden)
+
+```dockerfile
+ENTRYPOINT ["node"]
+```
+
+👉 CMD + ENTRYPOINT together:
+
+```dockerfile
+ENTRYPOINT ["node"]
+CMD ["app.js"]
+```
+
+---
+
+### 🔸 WORKDIR
+
+* Sets working directory
+
+```dockerfile
+WORKDIR /app
+```
+
+---
+
+### 🔸 ENV
+
+* Sets environment variables
+
+```dockerfile
+ENV PORT=3000
+```
+
+---
+
+### 🔸 EXPOSE
+
+* Documents port usage
+
+```dockerfile
+EXPOSE 3000
+```
+
+---
+
+### 🔸 VOLUME
+
+* Creates mount point
+
+```dockerfile
+VOLUME /data
+```
+
+---
+
+## 🔹 3. Image Creation (docker build)
+
+### ✅ Build Process
+
+```bash
+docker build -t myapp:1.0 .
+```
+
+Steps:
+
+1. Docker reads Dockerfile
+2. Sends build context
+3. Executes instructions layer by layer
+4. Creates final image
+
+---
+
+### ✅ Tagging / Versioning
+
+```bash
+docker tag myapp myapp:v1
+docker tag myapp myapp:latest
+```
+
+👉 Format:
+
+```
+image_name:tag
+```
+
+---
+
+### ✅ Inspecting Images
+
+#### View layers:
+
+```bash
+docker history myapp
+```
+
+#### Inspect details:
+
+```bash
+docker inspect myapp
+```
+
+---
+
+## 🔹 4. Docker Networking
+
+### ✅ Bridge Network (Default)
+
+* Containers communicate internally
+* Each gets IP
+
+```bash
+docker network create mynet
+docker run --network mynet nginx
+```
+
+---
+
+### ✅ Host Network
+
+* Container shares host network
+* No isolation
+
+```bash
+docker run --network host nginx
+```
+
+---
+
+### ✅ Overlay Network
+
+* Used in **Docker Swarm**
+* Connects containers across multiple hosts
+
+---
+
+### ✅ DNS inside Docker
+
+* Containers resolve names automatically
+
+```bash
+docker run --name db mysql
+docker run --name app --link db appimage
+```
+
+👉 Can access `db` directly
+
+---
+
+### ✅ Linking Containers (Old method)
+
+```bash
+docker run --link db:database app
+```
+
+---
+
+### ✅ Port Mapping
+
+```bash
+docker run -p 3000:3000 myapp
+```
+
+👉 Format:
+
+```
+host_port:container_port
+```
+
+---
+
+## 🔹 5. Docker Storage
+
+### ✅ Volumes
+
+* Managed by Docker
+* Best for production
+
+```bash
+docker volume create myvol
+docker run -v myvol:/data nginx
+```
+
+---
+
+### ✅ Bind Mounts
+
+* Direct mapping from host
+
+```bash
+docker run -v /host/path:/container/path nginx
+```
+
+---
+
+### 🔥 Difference
+
+| Feature     | Volume | Bind Mount |
+| ----------- | ------ | ---------- |
+| Managed by  | Docker | User       |
+| Portability | High   | Low        |
+| Performance | Better | Depends    |
+
+---
+
+### ✅ Backing Data on Host
+
+* Volumes stored in:
+
+```
+/var/lib/docker/volumes/
+```
+
+---
+
+### ✅ Copy-on-Write Mechanism
+
+* Base image is read-only
+* Changes stored in new layer
+
+👉 Efficient:
+
+* Saves space
+* Improves performance
+
+---
+
+## 🔹 6. Registries
+
+### ✅ Docker Hub
+
+* Default public registry
+
+```bash
+docker push username/myapp
+```
+
+---
+
+### ✅ GitHub Container Registry (GHCR)
+
+* Stores images in GitHub
+
+```bash
+docker push ghcr.io/username/myapp
+```
+
+---
+
+### ✅ Private Registries
+
+* Self-hosted or cloud-based
+* Secure image storage
+
+---
+
+### ✅ Authentication & Access Tokens
+
+#### Login:
+
+```bash
+docker login
+```
+
+#### Using token:
+
+```bash
+docker login -u username -p token
+```
+
+👉 Used for:
+
+* Secure push/pull
+* CI/CD pipelines
+
+---
+
+## 🔥 Final Quick Revision
+
+* Dockerfile → builds image
+* Image → layers + reusable
+* Container → running instance
+* Networks → connect containers
+* Volumes → store data
+* Registries → store images
+
+---
+
+## 🚀 Last Minute Tip (for exam)
+
+* Remember:
+
+  * Difference: CMD vs ENTRYPOINT
+  * Volume vs Bind Mount
+  * Bridge vs Host network
+  * COPY vs ADD
+  * Layer caching concept
+
+---
+
+✅ Done – I can revise this once and go to exam.
